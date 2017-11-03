@@ -5,17 +5,9 @@
 #include "sha256.h"
 
 
-
-
-//HostName=IoTCampAU.azure-devices.net;DeviceId=photon;SharedAccessKey=LO/v4iQMTGcebUhCYLMz5d+gl7vgr1AnNbf6UtouvDw=
-//HostName=IoThubSFM.azure-devices.net;DeviceId=photon;SharedAccessKey=cxh39Ic8JFkwd0bJBTLMcDv8e7itTO0NGI4ycwJsmAs=
-
-
-
-// IoT iotHub("IoThubSFM.azure-devices.net", "photon", "cxh39Ic8JFkwd0bJBTLMcDv8e7itTO0NGI4ycwJsmAs=");
-#define HOST "IoTCampAU.azure-devices.net"
+#define HOST "YourIoTHub.azure-devices.net"
 #define DEVICE "photon"
-#define KEY "LO/v4iQMTGcebUhCYLMz5d+gl7vgr1AnNbf6UtouvDw="
+#define KEY "LO/YourYourY677+gl7vgr1AnNbf6UtouvDw="
 
 
 
