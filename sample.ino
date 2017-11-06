@@ -5,9 +5,10 @@
 #include "sha256.h"
 
 
-#define HOST "YourIoTHub.azure-devices.net"
+
+#define HOST "IoTCampAU.azure-devices.net"
 #define DEVICE "photon"
-#define KEY "LO/YourYourY677+gl7vgr1AnNbf6UtouvDw="
+#define KEY "LO/v4iQMTGcebUhCYLMz5d+gl7vgr1AnNbf6UtouvDw="
 
 
 
@@ -55,7 +56,6 @@ const char * json = "{\"utc\":\"%s\",\"Celsius\":%.2f, \"hPa\":%.0f, \"Humidity\
 
 
 int count;
-int builtinled = D7; 
 
 
 #define DATASIZE 256
@@ -70,7 +70,6 @@ unsigned long lastSync = millis();
 void setup() {
     Serial.begin(9600);
     delay(1000);
-    pinMode(builtinled, OUTPUT);
 
     Particle.syncTime();
     lastSync = millis();
@@ -100,16 +99,15 @@ void loop() {
 
     count++;
     // Serial.println(count);
-    
-    digitalWrite(builtinled, count % 2);  // toggle status led
 
     snprintf(data, DATASIZE, json, startUtc, 21.0, 1010.0, 80.0, count, System.freeMemory());
     
     iotHub.publish(data);
     
+    
     // Serial.println(iotHub.publish(data));
 
 
-    delay(1000);
+    delay(100);
     
 }
