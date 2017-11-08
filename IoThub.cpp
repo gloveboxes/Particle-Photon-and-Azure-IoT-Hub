@@ -95,13 +95,13 @@ char *IoTHub::publishEnd()
 
     delay(200);
 
-    while (WiFi.ready() && client->isConnected() && client->available() == 0 && maxRetry < 10)
+    while (WiFi.ready() && client->isConnected() && client->available() == 0 && maxRetry < 40)   // 8 seconds max
     {
         delay(200);
         maxRetry++;
     }
 
-    if (maxRetry == 10)
+    if (maxRetry == 40)
     {
         return "no response";
     }
