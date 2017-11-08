@@ -87,26 +87,29 @@ void IoTHub::flush()
 char *IoTHub::publishEnd()
 {
     int maxRetry = 0;
-    
-    if (!WiFi.ready() || !client->isConnected()) {
+
+    if (!WiFi.ready() || !client->isConnected())
+    {
         return "not connected";
     }
-    
+
     delay(200);
-    
-    while (WiFi.ready() && client->isConnected() && client->available() == 0 && maxRetry < 10){
+
+    while (WiFi.ready() && client->isConnected() && client->available() == 0 && maxRetry < 10)
+    {
         delay(200);
         maxRetry++;
     }
-    
-    if (maxRetry == 10) {
+
+    if (maxRetry == 10)
+    {
         return "no response";
     }
-    
+
     maxRetry = 0;
     memset(buff, 0, BUFSIZE);
-    
-    while (maxRetry < 20  && WiFi.ready() && client->isConnected())
+
+    while (maxRetry < 20 && WiFi.ready() && client->isConnected())
     {
         maxRetry++;
         delay(150);
@@ -127,10 +130,10 @@ char *IoTHub::publishEnd()
 int IoTHub::publishBegin(int dataLength)
 {
     generateSas();
-    
+
     flush(); // flush response buffer before next HTTP POST
-    
-    int postLen =  snprintf(buff, BUFSIZE, httpRequest, endPoint, host, fullSas, dataLength); // Build http post header
+
+    int postLen = snprintf(buff, BUFSIZE, httpRequest, endPoint, host, fullSas, dataLength); // Build http post header
 
     return publishData(buff, postLen);
 }
@@ -139,24 +142,23 @@ int IoTHub::publishData(char *data, int dataLength)
 {
     int startChar = 0;
     unsigned char *dataPointer = (unsigned char *)data;
-    int ret  = 0;
+    int ret = 0;
     int len = 0;
     int totalBytes = 0;
 
-    
     if (WiFi.ready() && !client->isConnected())
     {
         client->init(letencryptCaPem, strlen(letencryptCaPem) + 1); // it wants the length on the cert string including null terminator
         client->connect(host, 443);
     }
-    
 
     while (startChar < dataLength && WiFi.ready() && client->isConnected()) // write out data in chunks
     {
         delay(10);
         len = (startChar + SEGMENT_LENGTH < dataLength) ? SEGMENT_LENGTH : dataLength - startChar;
         ret = client->write(dataPointer, len);
-        if (ret < 0) {
+        if (ret < 0)
+        {
             return ret;
         }
         totalBytes += ret;
@@ -174,19 +176,21 @@ char *IoTHub::publish(char *data)
     digitalWrite(statusLed, HIGH);
 
     result = publishBegin(dataLength);
-    if (result < 0){
+    if (result < 0)
+    {
         Serial.println("write fail");
         digitalWrite(statusLed, LOW);
         return "http post write failure";
     }
 
     result = publishData(data, dataLength);
-    if (result < 0){
+    if (result < 0)
+    {
         Serial.println("write fail");
         digitalWrite(statusLed, LOW);
         return "http post write failure";
     }
-    
+
     digitalWrite(statusLed, LOW);
 
     digitalWrite(builtinled, HIGH); // toggle status led

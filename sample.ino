@@ -4,7 +4,6 @@
 #include "application.h"
 #include "sha256.h"
 
-
 #define HOST "IoTCampAU.azure-devices.net"
 #define DEVICE "photon"
 #define KEY "LO/v4iQMTGcebUhCYLMz5d+gl7vgr1AnNbf6UtouvDw="
@@ -79,8 +78,9 @@ void loop()
     {
         Serial.println("wifi connecting");
         delay(2000);
-        
-        while(!WiFi.ready()){
+
+        while (!WiFi.ready())
+        {
             Serial.print(".");
             delay(1000);
         }
