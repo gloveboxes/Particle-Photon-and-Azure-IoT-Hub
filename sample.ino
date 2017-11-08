@@ -4,6 +4,7 @@
 #include "application.h"
 #include "sha256.h"
 
+
 #define HOST "IoTCampAU.azure-devices.net"
 #define DEVICE "photon"
 #define KEY "LO/v4iQMTGcebUhCYLMz5d+gl7vgr1AnNbf6UtouvDw="
