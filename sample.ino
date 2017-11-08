@@ -46,7 +46,7 @@ char *letencryptCaPem = LET_ENCRYPT_CA_PEM;
 
 IoT iotHub(HOST, DEVICE, KEY, letencryptCaPem);
 
-const char *json = "{\"utc\":\"%s\",\"Celsius\":%.2f, \"hPa\":%.0f, \"Humidity\":%.0f, \"Id\":%d, \"Mem\":%d}";
+const char *json = "{\"utc\":\"%s\",\"Celsius\":%.2f, \"hPa\":%.0f, \"Humidity\":%.0f, \"Light\":%d, \"Id\":%d, \"Mem\":%d}";
 
 int count;
 
@@ -77,9 +77,14 @@ void loop()
     if (!WiFi.ready())
     {
         Serial.println("wifi connecting");
-        delay(5);
-        // WiFi.connect();
-        return;
+        delay(2000);
+        
+        while(!WiFi.ready()){
+            Serial.print(".");
+            delay(1000);
+        }
+        delay(1000);
+        Serial.println("Connected");
     }
 
     if (millis() - lastSync > ONE_DAY_MILLIS)
@@ -92,7 +97,7 @@ void loop()
     count++;
     // Serial.println(count);
 
-    snprintf(data, DATASIZE, json, startUtc, 21.0, 1010.0, 80.0, count, System.freeMemory());
+    snprintf(data, DATASIZE, json, startUtc, 21.0, 1010.0, 80.0, 0, count, System.freeMemory());
 
     iotHub.publish(data);
 

@@ -71,30 +71,12 @@ void IoT::generateSas()
     createSas(key, sasUrl);
 }
 
-void IoT::sendData(char *data, int dataLength)
-{
-    int startChar = 0;
-    unsigned char *dataPointer = (unsigned char *)data;
-
-    while (startChar + SEGMENT_LENGTH < dataLength) // write out data in chunks
-    {
-        delay(10);
-        client->write(dataPointer, SEGMENT_LENGTH);
-        startChar += SEGMENT_LENGTH;
-        dataPointer += SEGMENT_LENGTH;
-    }
-
-    dataLength = dataLength - startChar;
-    delay(10);
-    client->write(dataPointer, dataLength);
-}
-
 void IoT::flush()
 {
-    int maxRead = 0;
-    while (client->available() && maxRead < 50)
+    int maxRetry = 0;
+    while (WiFi.ready() && client->isConnected() && client->available() > 0 && maxRetry < 20)
     {
-        maxRead++;
+        maxRetry++;
         int ret = client->read((unsigned char *)buff, BUFSIZE - 1);
         if (ret == MBEDTLS_ERR_SSL_WANT_READ)
         {
@@ -103,14 +85,31 @@ void IoT::flush()
     }
 }
 
-char *IoT::publishReadResponse()
+char *IoT::publishEnd()
 {
-    int maxRead = 0;
+    int maxRetry = 0;
+    
+    if (!WiFi.ready() || !client->isConnected()) {
+        return "not connected";
+    }
+    
     delay(200);
+    
+    while (WiFi.ready() && client->isConnected() && client->available() == 0 && maxRetry < 10){
+        delay(200);
+        maxRetry++;
+    }
+    
+    if (maxRetry == 10) {
+        return "no response";
+    }
+    
+    maxRetry = 0;
     memset(buff, 0, BUFSIZE);
-    while (true && maxRead < 50)
+    
+    while (maxRetry < 20  && WiFi.ready() && client->isConnected())
     {
-        maxRead++;
+        maxRetry++;
         delay(150);
         memset(buff, 0, BUFSIZE);
         int ret = client->read((unsigned char *)buff, BUFSIZE - 1); // allow for null termination
@@ -126,59 +125,81 @@ char *IoT::publishReadResponse()
     return buff;
 }
 
-bool IoT::publishBegin(int dataLength)
+int IoT::publishBegin(int dataLength)
 {
-    if (!WiFi.ready())
-    {
-        return false;
-    }
-
-    if (!client->isConnected())
-    {
-        client->init(letencryptCaPem, strlen(letencryptCaPem) + 1); // it wants the length on the cert string include null terminator
-        client->connect(host, 443);
-    }
-
-    if (!client->isConnected())
-    {
-        return false;
-    }
-
     generateSas();
-
+    
     flush(); // flush response buffer before next HTTP POST
+
 
     memset(buff, 0, BUFSIZE);
     int postLen = buildHttpRequestion(buff, BUFSIZE, dataLength);
 
-    sendData((char *)buff, postLen);
+    return publishData(buff, postLen);
 }
 
-void IoT::publishData(char *data, int dataLength)
+int IoT::publishData(char *data, int dataLength)
 {
-    sendData(data, dataLength);
+    int startChar = 0;
+    unsigned char *dataPointer = (unsigned char *)data;
+    int ret  = 0;
+    int len = 0;
+    int totalBytes = -1;
+
+    
+    if (WiFi.ready() && !client->isConnected())
+    {
+        client->init(letencryptCaPem, strlen(letencryptCaPem) + 1); // it wants the length on the cert string include null terminator
+        client->connect(host, 443);
+    }
+    
+
+    while (startChar < dataLength && WiFi.ready() && client->isConnected()) // write out data in chunks
+    {
+        delay(10);
+        len = (startChar + SEGMENT_LENGTH < dataLength) ? SEGMENT_LENGTH : dataLength - startChar;
+        ret = client->write(dataPointer, len);
+        if (ret < 0) {
+            return ret;
+        }
+        totalBytes += ret;
+        startChar += len;
+        dataPointer += len;
+    }
+    return totalBytes;
 }
 
 char *IoT::publish(char *data)
 {
+    int result = 0;
     int dataLength = strlen(data);
 
     digitalWrite(statusLed, HIGH);
 
-    if (!publishBegin(dataLength))
-    {
-        return "No wifi or IoT Hub Connection";
+    result = publishBegin(dataLength);
+    if (result < 0){
+        // client->close();
+        Serial.println("write fail");
+        digitalWrite(statusLed, LOW);
+        return "http post write failure";
     }
 
-    publishData(data, dataLength);
-
+    result = publishData(data, dataLength);
+    if (result < 0){
+        // client->close();
+        Serial.println("write fail");
+        digitalWrite(statusLed, LOW);
+        return "http post write failure";
+    }
+    
     digitalWrite(statusLed, LOW);
 
     digitalWrite(builtinled, HIGH); // toggle status led
 
-    char *response = publishReadResponse();
+    char *response = publishEnd();
 
     digitalWrite(builtinled, LOW); // toggle status led
+    
 
     return response;
 }

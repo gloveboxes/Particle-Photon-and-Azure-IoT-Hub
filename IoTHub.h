@@ -28,9 +28,9 @@ class IoT
     }
 
     char *publish(char *data);
-    bool publishBegin(int dataLength);
-    void publishData(char *, int dataLength);
-    char *publishReadResponse();
+    int publishBegin(int dataLength);
+    int publishData(char *, int dataLength);
+    char *publishEnd();
 
     char *host;     // = "IoTCampAU.azure-devices.net";
     char *deviceId; // = "photon";
@@ -57,15 +57,12 @@ class IoT
     // String createSas(char *key, String url);
     void createSas(char *key, String url);
     int buildHttpRequestion(char *buffer, int len, int dataLength);
-    void sendData(char *data, int datalength);
     void generateSas();
     void initialiseHub();
     time_t currentEpochTime();
     time_t tmConvert_t(int YYYY, byte MM, byte DD, byte hh, byte mm, byte ss);
     int urlEncode(char *dest, char *msg);
     void flush();
-
-    // const char *letencryptCaPem = LET_ENCRYPT_CA_PEM;
 
     const char *TARGET_URL = "/devices/";
     const char *IOT_HUB_END_POINT = "/messages/events?api-version=2016-02-03";
