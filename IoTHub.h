@@ -11,10 +11,10 @@
 #define FULL_SAS_SIZE 150
 #define BUFSIZE 512
 
-class IoT
+class IoTHub
 {
   public:
-    IoT(char *host, char *deviceId, char *key, char *letencryptCaPem)
+    IoTHub(char *host, char *deviceId, char *key, char *letencryptCaPem)
     {
         this->host = host;
         this->deviceId = deviceId;
@@ -56,7 +56,6 @@ class IoT
 
     // String createSas(char *key, String url);
     void createSas(char *key, String url);
-    int buildHttpRequestion(char *buffer, int len, int dataLength);
     void generateSas();
     void initialiseHub();
     time_t currentEpochTime();

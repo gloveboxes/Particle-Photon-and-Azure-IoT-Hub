@@ -51,7 +51,7 @@ const char *json = "{\"utc\":\"%s\",\"Celsius\":%.2f, \"hPa\":%.0f, \"Humidity\"
 
 int count;
 
-#define DATASIZE 256
+#define DATASIZE 150
 char data[DATASIZE];
 char startUtc[30];
 

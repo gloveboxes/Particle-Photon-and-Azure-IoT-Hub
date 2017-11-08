@@ -1,15 +1,14 @@
 #include "IoTHub.h"
 
-void IoT::initialiseHub()
+void IoTHub::initialiseHub()
 {
     urlEncode(buff, (char *)TARGET_URL);
     sasUrl = (String)host + buff + (String)deviceId;
 
-    memset(endPoint, 0, sizeof(endPoint));
-    snprintf(endPoint, sizeof(endPoint), "%s%s%s\0", TARGET_URL, deviceId, IOT_HUB_END_POINT);
+    snprintf(endPoint, sizeof(endPoint), "%s%s%s", TARGET_URL, deviceId, IOT_HUB_END_POINT);
 }
 
-int IoT::urlEncode(char *dest, char *msg)
+int IoTHub::urlEncode(char *dest, char *msg)
 {
     const char *hex = "0123456789abcdef";
     char *startPtr = dest;
@@ -32,7 +31,7 @@ int IoT::urlEncode(char *dest, char *msg)
     return dest - startPtr;
 }
 
-void IoT::createSas(char *key, String url)
+void IoTHub::createSas(char *key, String url)
 {
     sasExpiryTime = currentEpochTime() + sasExpiryPeriodInSeconds;
 
@@ -44,7 +43,7 @@ void IoT::createSas(char *key, String url)
     base64_decode(buff, key, keyLength); //decode key
     Sha256.initHmac((const uint8_t *)buff, decodedKeyLength);
 
-    int len = snprintf(buff, sizeof(buff), "%s\n%d\0", url.c_str(), sasExpiryTime);
+    int len = snprintf(buff, sizeof(buff), "%s\n%d", url.c_str(), sasExpiryTime);
     Sha256.print(buff);
 
     char *sign = (char *)Sha256.resultHmac();
@@ -59,10 +58,10 @@ void IoT::createSas(char *key, String url)
     char *sasPointer = fullSas;
     sasPointer += snprintf(sasPointer, sizeof(fullSas), "sr=%s&sig=", url.c_str());
     sasPointer += urlEncode(sasPointer, buff);
-    snprintf(sasPointer, sizeof(fullSas) - (sasPointer - fullSas), "&se=%d\0", sasExpiryTime);
+    snprintf(sasPointer, sizeof(fullSas) - (sasPointer - fullSas), "&se=%d", sasExpiryTime);
 }
 
-void IoT::generateSas()
+void IoTHub::generateSas()
 {
     if (currentEpochTime() < sasExpiryTime)
     {
@@ -71,7 +70,7 @@ void IoT::generateSas()
     createSas(key, sasUrl);
 }
 
-void IoT::flush()
+void IoTHub::flush()
 {
     int maxRetry = 0;
     while (WiFi.ready() && client->isConnected() && client->available() > 0 && maxRetry < 20)
@@ -85,7 +84,7 @@ void IoT::flush()
     }
 }
 
-char *IoT::publishEnd()
+char *IoTHub::publishEnd()
 {
     int maxRetry = 0;
     
@@ -125,31 +124,29 @@ char *IoT::publishEnd()
     return buff;
 }
 
-int IoT::publishBegin(int dataLength)
+int IoTHub::publishBegin(int dataLength)
 {
     generateSas();
     
     flush(); // flush response buffer before next HTTP POST
-
-
-    memset(buff, 0, BUFSIZE);
-    int postLen = buildHttpRequestion(buff, BUFSIZE, dataLength);
+    
+    int postLen =  snprintf(buff, BUFSIZE, httpRequest, endPoint, host, fullSas, dataLength); // Build http post header
 
     return publishData(buff, postLen);
 }
 
-int IoT::publishData(char *data, int dataLength)
+int IoTHub::publishData(char *data, int dataLength)
 {
     int startChar = 0;
     unsigned char *dataPointer = (unsigned char *)data;
     int ret  = 0;
     int len = 0;
-    int totalBytes = -1;
+    int totalBytes = 0;
 
     
     if (WiFi.ready() && !client->isConnected())
     {
-        client->init(letencryptCaPem, strlen(letencryptCaPem) + 1); // it wants the length on the cert string include null terminator
+        client->init(letencryptCaPem, strlen(letencryptCaPem) + 1); // it wants the length on the cert string including null terminator
         client->connect(host, 443);
     }
     
@@ -169,7 +166,7 @@ int IoT::publishData(char *data, int dataLength)
     return totalBytes;
 }
 
-char *IoT::publish(char *data)
+char *IoTHub::publish(char *data)
 {
     int result = 0;
     int dataLength = strlen(data);
@@ -178,7 +175,6 @@ char *IoT::publish(char *data)
 
     result = publishBegin(dataLength);
     if (result < 0){
-        // client->close();
         Serial.println("write fail");
         digitalWrite(statusLed, LOW);
         return "http post write failure";
@@ -186,7 +182,6 @@ char *IoT::publish(char *data)
 
     result = publishData(data, dataLength);
     if (result < 0){
-        // client->close();
         Serial.println("write fail");
         digitalWrite(statusLed, LOW);
         return "http post write failure";
@@ -199,23 +194,16 @@ char *IoT::publish(char *data)
     char *response = publishEnd();
 
     digitalWrite(builtinled, LOW); // toggle status led
-    
 
     return response;
 }
 
-int IoT::buildHttpRequestion(char *buffer, int len, int dataLength)
-{
-    memset(buffer, 0, len);
-    return snprintf(buffer, len, httpRequest, endPoint, host, fullSas, dataLength);
-}
-
-time_t IoT::currentEpochTime()
+time_t IoTHub::currentEpochTime()
 {
     return tmConvert_t(Time.year(), Time.month(), Time.day(), Time.hour(), Time.minute(), Time.second());
 }
 
-time_t IoT::tmConvert_t(int YYYY, byte MM, byte DD, byte hh, byte mm, byte ss)
+time_t IoTHub::tmConvert_t(int YYYY, byte MM, byte DD, byte hh, byte mm, byte ss)
 {
     t.tm_year = YYYY - 1900;
     t.tm_mon = MM - 1;
